@@ -28,7 +28,7 @@
 AUTOMOUNT=true
 
 # Set to true if you need post-fs-data script
-POSTFSDATA=false
+POSTFSDATA=true
 
 # Set to true if you need late_start service script
 LATESTARTSERVICE=false
@@ -44,7 +44,6 @@ print_modname() {
   ui_print "    *******************************************"
   ui_print "    *<name>*"
   ui_print "    *******************************************"
-  ui_print "    *             Universal - Mod             *"
   ui_print "    *<version>*"
   ui_print "    *<author>*"
   ui_print "    *******************************************"
