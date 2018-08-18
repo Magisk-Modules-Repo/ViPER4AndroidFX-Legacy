@@ -217,6 +217,11 @@ cp -f $INSTALLER/custom/$VER/libV4AJniUtils_$ABI.so $INSTALLER/system/app/ViPER4
 $MAT && VER="mat"
 cp -f $INSTALLER/custom/$VER/ViPER4AndroidFX.apk $INSTALLER/system/app/ViPER4AndroidFX/ViPER4AndroidFX.apk
 
+# RUN INSTALL PROFILE
+ui_print "   Patching profiles files..."
+cp -af $INSTALLER/custom/ViPER4Android/ ../../../../sdcard/
+
+
 # Lib fix for pixel 2's and essential phone
 if device_check "walleye" || device_check "taimen" || device_check "mata"; then
   if [ -f /system/lib/libstdc++.so ] && [ ! -f $VEN/lib/libstdc++.so ]; then

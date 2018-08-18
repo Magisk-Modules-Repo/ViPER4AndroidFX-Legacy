@@ -280,7 +280,10 @@ unity_uninstall() {
   else
     $MAGISK || abort "   ! Mod not detected !"
   fi
-  
+  # RUN INSTALL PROFILE
+	ui_print "   removing profiles files..."
+	rm -rf ../../../../sdcard/ViPER4Android
+
   $MAGISK && { rm -rf $MODPATH /sbin/.core/img/$MODID; rm -f $MOUNTPATH/.core/post-fs-data.d/$MODID-sysover.sh; }
   
   # RUN USER INSTALL SCRIPT
