@@ -54,6 +54,9 @@ chooseportold() {
   fi
 }
 
+ui_print "   Decompressing files..."
+tar -xf $INSTALLER/custom.tar.xz -C $INSTALLER 2>/dev/null
+
 # Tell user aml is needed if applicable
 if $MAGISK && ! $SYSOVERRIDE; then
   if $BOOTMODE; then LOC="/sbin/.core/img/*/system $MOUNTPATH/*/system"; else LOC="$MOUNTPATH/*/system"; fi
@@ -231,7 +234,7 @@ if $PATCH; then
   ui_print "   Patching existing audio_effects files..."
   for OFILE in ${CFGS}; do
     FILE="$UNITY$(echo $OFILE | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch_nb $ORIGDIR$OFILE $FILE 0644 false
+    cp_ch -nn $ORIGDIR$OFILE $FILE
     osp_detect $FILE
     case $FILE in
       *.conf) sed -i "/v4a_standard_fx {/,/}/d" $FILE
