@@ -54,7 +54,7 @@ keytest() {
 
 chooseport() {
   #note from chainfire @xda-developers: getevent behaves weird when piped, and busybox grep likes that even less than toolbox/toybox grep
-  while (true); do
+  while true; do
     /system/bin/getevent -lc 1 2>&1 | /system/bin/grep VOLUME | /system/bin/grep " DOWN" > $INSTALLER/events
     if (`cat $INSTALLER/events 2>/dev/null | /system/bin/grep VOLUME >/dev/null`); then
       break
@@ -106,55 +106,19 @@ if $MAGISK && ! $SYSOVERRIDE; then
 fi
 
 # GET OLD/NEW FROM ZIP NAME
-MID=false; NEW=false
-case $(basename $ZIP) in
-  *old*|*Old*|*OLD*) MAT=false;;
-  *mid*|*Mid*|*MID*) MAT=false; MID=true;;
-  *new*|*New*|*NEW*) MAT=false; NEW=true;;
-  *mat*|*mat*|*MAT*) MAT=true;;
+OIFS=$IFS; IFS=\|; MID=false; NEW=false
+case $(echo $(basename $ZIP) | tr '[:upper:]' '[:lower:]') in
+  *old*) MAT=false;;
+  *mid*) MAT=false; MID=true;;
+  *new*) MAT=false; NEW=true;;
+  *mat*) MAT=true;;
 esac
 # GET USERAPP FROM ZIP NAME
-case $(basename $ZIP) in
-  *UAPP*|*Uapp*|*uapp*) UA=true;;
-  *SAPP*|*Sapp*|*sapp*) UA=false;;
+case $(echo $(basename $ZIP) | tr '[:upper:]' '[:lower:]') in
+  *UAPP*) UA=true;;
+  *SAPP*) UA=false;;
 esac
-
-# Check API compatibility
-PATCH=true
-if [ $API -le 15 ]; then
-  DRV=ics_$ABI
-else
-  DRV=jb_$ABI
-fi
-if [ $API -le 10 ]; then
-  ui_print " "
-  ui_print "   Gingerbread rom detected!"
-  ui_print "   Only v2.3.4.0 is compatible!"
-  MID=false; NEW=false; MAT=false; PATCH=false
-  # Detect driver compatibility
-  ui_print " "
-  ABIVER=$(echo $ABILONG | sed -r 's/.*-v([0-9]*).*/\1/')
-  [ -z $ABIVER ] && ABIVER=0
-  CPUFEAT=$(cat /proc/cpuinfo | grep 'Features')
-  if [ $ABIVER -ge 7 ] || [ "$(echo $CPUFEAT | grep 'neon')" ]; then
-    ui_print "   Neon Device detected!"
-    DRV=arm
-  elif [ "$ABI" == "x86" ]; then
-    ui_print "   x86 Device detected!"
-    DRV=x86
-  elif [ "$(echo $CPUFEAT | grep 'vfp')" ]; then
-    ui_print "   Non-neon VFP Device detected!"
-    DRV=VFP
-  else
-    ui_print "   Non-Neon, Non-VFP Device detected!"
-    DRV=NOVFP
-  fi
-elif [ $API -le 13 ]; then
-  ui_print " "
-  ui_print "   Honeycomb rom detected!"
-  ui_print "   Only v2.3.4.0 is compatible!"
-  MID=false; NEW=false; MAT=false
-fi
+IFS=$OIFS
 
 # Keycheck binary by someone755 @Github, idea for code below by Zappo @xda-developers
 KEYCHECK=$INSTALLER/common/keycheck
@@ -256,28 +220,33 @@ if $MAT; then
   sed -ri "s/name=(.*)/name=\1 Materialized/" $INSTALLER/module.prop
   sed -i "s/author=.*/author=ViPER520, ZhuHang, Team_Dewitt, Ahrion, Zackptg5/" $INSTALLER/module.prop
   ACTIVITY="com.pittvandewitt.viperfx"
+  FACTIVITY="com.pittvandewitt.viperfx/com.audlabs.viperfx.main.MainActivity"
 elif $NEW; then
   ui_print "   V4A $VER will be installed"
   cp -f $INSTALLER/custom/$VER/privapp-permissions-com.audlabs.viperfx.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.audlabs.viperfx.xml
   ACTIVITY="com.audlabs.viperfx"
+  FACTIVITY="com.audlabs.viperfx/.main.StartActivity"
 elif $MID; then
   VER="2.4.0.1"
   ui_print "   V4A $VER will be installed"
   cp -f $INSTALLER/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
   ACTIVITY="com.vipercn.viper4android_v2"
+  FACTIVITY="com.vipercn.viper4android_v2/.activity.ViPER4Android"
   LIBPATCH="\/system"; LIBDIR=/system; DYNAMICOREO=false
 else
   VER="2.3.4.0"
   ui_print "   V4A $VER will be installed"
   cp -f $INSTALLER/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
   ACTIVITY="com.vipercn.viper4android_v2"
+  FACTIVITY="com.vipercn.viper4android_v2/.activity.ViPER4Android"
   LIBPATCH="\/system"; LIBDIR=/system; DYNAMICOREO=false
 fi
 
-$LATESTARTSERVICE && { sed -i "s/<ACTIVITY>/$ACTIVITY/g" $INSTALLER/common/service.sh; sed -i "s/<ACTIVITY>/$ACTIVITY/g" $INSTALLER/common/v4afx.sh; }
+sed -i "s/<SOURCE>/$SOURCE/g" $INSTALLER/common/sepolicy.sh
+$LATESTARTSERVICE && { sed -i -e "s/<ACTIVITY>/$ACTIVITY/g" -e "s|<FACTIVITY>|$FACTIVITY|g" $INSTALLER/common/service.sh; sed -i "s/<ACTIVITY>/$ACTIVITY/g" $INSTALLER/common/v4afx.sh; }
 sed -ri "s/version=(.*)/version=\1 ($VER)/" $INSTALLER/module.prop
 echo -e "UA=$UA\nACTIVITY=$ACTIVITY" >> $INSTALLER/module.prop
-cp -f $INSTALLER/custom/$VER/libv4a_fx_$DRV.so $INSTALLER/system/lib/soundfx/libv4a_fx_ics.so
+cp -f $INSTALLER/custom/$VER/libv4a_fx_jb_$ABI.so $INSTALLER/system/lib/soundfx/libv4a_fx_ics.so
 cp -f $INSTALLER/custom/$VER/libV4AJniUtils_$ABI.so $INSTALLER/system/app/ViPER4AndroidFX/lib/$ABI/libV4AJniUtils.so
 $MAT && VER="mat"
 if $UA; then
@@ -299,7 +268,7 @@ else
 fi
 
 # Lib fix for pixel 2's, 3's, and essential phone
-if device_check "walleye" || device_check "taimen" || device_check "crosshatch" || device_check "blueline" || device_check "mata"; then
+if device_check "walleye" || device_check "taimen" || device_check "crosshatch" || device_check "blueline" || device_check "mata" || device_check "jasmine"; then
   if [ -f /system/lib/libstdc++.so ] && [ ! -f $VEN/lib/libstdc++.so ]; then
     cp_ch /system/lib/libstdc++.so $UNITY$VEN/lib/libstdc++.so
   elif [ -f $VEN/lib/libstdc++.so ] && [ ! -f /system/lib/libstdc++.so ]; then
@@ -331,21 +300,19 @@ else
   done
 fi
 
-if $PATCH; then
-  ui_print "   Patching existing audio_effects files..."
-  for OFILE in ${CFGS}; do
-    FILE="$UNITY$(echo $OFILE | sed "s|^/vendor|/system/vendor|g")"
-    cp_ch -nn $ORIGDIR$OFILE $FILE
-    osp_detect $FILE
-    case $FILE in
-      *.conf) sed -i "/v4a_standard_fx {/,/}/d" $FILE
-              sed -i "/v4a_fx {/,/}/d" $FILE
-              sed -i "s/^effects {/effects {\n  v4a_standard_fx { #$MODID\n    library v4a_fx\n    uuid 41d3c987-e6cf-11e3-a88a-11aba5d5c51b\n  } #$MODID/g" $FILE
-              sed -i "s/^libraries {/libraries {\n  v4a_fx { #$MODID\n    path $LIBPATCH\/lib\/soundfx\/libv4a_fx_ics.so\n  } #$MODID/g" $FILE;;
-      *.xml) sed -i "/v4a_standard_fx/d" $FILE
-             sed -i "/v4a_fx/d" $FILE
-             sed -i "/<libraries>/ a\        <library name=\"v4a_fx\" path=\"libv4a_fx_ics.so\"\/><!--$MODID-->" $FILE
-             sed -i "/<effects>/ a\        <effect name=\"v4a_standard_fx\" library=\"v4a_fx\" uuid=\"41d3c987-e6cf-11e3-a88a-11aba5d5c51b\"\/><!--$MODID-->" $FILE;;
-    esac
-  done
-fi
+ui_print "   Patching existing audio_effects files..."
+for OFILE in ${CFGS}; do
+  FILE="$UNITY$(echo $OFILE | sed "s|^/vendor|/system/vendor|g")"
+  cp_ch -nn $ORIGDIR$OFILE $FILE
+  osp_detect $FILE
+  case $FILE in
+    *.conf) sed -i "/v4a_standard_fx {/,/}/d" $FILE
+            sed -i "/v4a_fx {/,/}/d" $FILE
+            sed -i "s/^effects {/effects {\n  v4a_standard_fx { #$MODID\n    library v4a_fx\n    uuid 41d3c987-e6cf-11e3-a88a-11aba5d5c51b\n  } #$MODID/g" $FILE
+            sed -i "s/^libraries {/libraries {\n  v4a_fx { #$MODID\n    path $LIBPATCH\/lib\/soundfx\/libv4a_fx_ics.so\n  } #$MODID/g" $FILE;;
+    *.xml) sed -i "/v4a_standard_fx/d" $FILE
+           sed -i "/v4a_fx/d" $FILE
+           sed -i "/<libraries>/ a\        <library name=\"v4a_fx\" path=\"libv4a_fx_ics.so\"\/><!--$MODID-->" $FILE
+           sed -i "/<effects>/ a\        <effect name=\"v4a_standard_fx\" library=\"v4a_fx\" uuid=\"41d3c987-e6cf-11e3-a88a-11aba5d5c51b\"\/><!--$MODID-->" $FILE;;
+  esac
+done
