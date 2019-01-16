@@ -7,6 +7,9 @@ This module enables ViPER4Android FX (You can choose between Material, 2.5.0.5, 
 * All root solutions (requires init.d support if not using magisk or supersu. Try [Init.d Injector](https://forum.xda-developers.com/android/software-hacking/mod-universal-init-d-injector-wip-t3692105))
 
 ## Change Log
+### v3.3 - 1.16.2019
+* Forgot to move apk back to priv-app (needed for unity 3.2)
+
 ### v3.2 - 1.15.2019
 * Unity v3.2 update
 * Fix aroma for devices that don't have /cache partition
