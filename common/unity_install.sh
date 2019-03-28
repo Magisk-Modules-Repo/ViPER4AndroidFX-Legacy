@@ -14,11 +14,11 @@ osp_detect() {
 }
 
 ui_print "   Decompressing files..."
-tar -xf $INSTALLER/custom.tar.xz -C $INSTALLER 2>/dev/null
+tar -xf $TMPDIR/custom.tar.xz -C $TMPDIR 2>/dev/null
 
 # Tell user aml is needed if applicable
-if $MAGISK && ! $SYSOVERRIDE; then
-  if $BOOTMODE; then LOC="$MAGISKTMP/img/*/system $MOUNTPATH/*/system"; else LOC="$MOUNTPATH/*/system"; fi
+if $MAGISK && ! $SYSOVER; then
+  if $BOOTMODE; then LOC="$MOUNTEDROOT/*/system $MODULEROOT/*/system"; else LOC="$MODULEROOT/*/system"; fi
   FILES=$(find $LOC -type f -name "*audio_effects*.conf" -o -name "*audio_effects*.xml" 2>/dev/null)
   if [ ! -z "$FILES" ] && [ ! "$(echo $FILES | grep '/aml/')" ]; then
     ui_print " "
@@ -29,44 +29,31 @@ if $MAGISK && ! $SYSOVERRIDE; then
   fi
 fi
 
-if $AROMA; then
-  # Get aroma selection
-  OLD=false; MID=false; NEW=false; MAT=false
-  case $(grep_prop "selected.0" $UNITY/system/etc/$MODID/v4a.prop) in
-    1) MAT=true;;
-    2) NEW=true;;
-    3) MID=true;;
-    4) OLD=true;;
-  esac
-  case $(grep_prop "selected.0" $UNITY/system/etc/$MODID/ua.prop) in
-    1) UA=false;;
-    2) UA=true;;
-  esac
-  case $(grep_prop "selected.0" $UNITY/system/etc/$MODID/lw.prop) in
-    1) LIBWA=true;;
-    2) LIBWA=false;;
-  esac
-else
-  # Get old/new from zip name
-  OIFS=$IFS; IFS=\|; MID=false; NEW=false
-  case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
-    *old*) MAT=false;;
-    *mid*) MAT=false; MID=true;;
-    *new*) MAT=false; NEW=true;;
-    *mat*) MAT=true;;
-  esac
-  # Get userapp from zip name
-  case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
-    *uapp*) UA=true;;
-    *sapp*) UA=false;;
-  esac
-  # Get lib workaround from zip name
-  case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
-    *lib*) LIBWA=true;;
-    *nlib*) LIBWA=false;;
-  esac
-  IFS=$OIFS
+# Get old/new from zip name
+OIFS=$IFS; IFS=\|; MID=false; NEW=false
+case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
+  *old*) MAT=false;;
+  *mid*) MAT=false; MID=true;;
+  *new*) MAT=false; NEW=true;;
+  *mat*) MAT=true;;
+esac
+# Get userapp from zip name
+case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
+  *uapp*) UA=true;;
+  *sapp*) UA=false;;
+esac
+# Get lib workaround from zip name
+case $(echo $(basename $ZIPFILE) | tr '[:upper:]' '[:lower:]') in
+  *lib*) LIBWA=true;;
+  *nlib*) LIBWA=false;;
+esac
+IFS=$OIFS
+
+# Check for devices that need lib workaround
+if device_check "walleye" || device_check "taimen" || device_check "crosshatch" || device_check "blueline" || device_check "mata" || device_check "jasmine" || device_check "star2lte" || device_check "z2_row"; then
+  LIBWA=true
 fi
+
 ui_print " "
 ui_print "   Removing remnants from past v4a installs..."
 # Uninstall existing v4a installs
@@ -167,63 +154,63 @@ fi
 
 ui_print " "
 VER="2.5.0.5"
-mkdir -p $INSTALLER/system/lib/soundfx $INSTALLER/system/etc/permissions $INSTALLER/system/priv-app/ViPER4AndroidFX/lib/$ABI
+mkdir -p $TMPDIR/system/lib/soundfx $TMPDIR/system/etc/permissions $TMPDIR/system/priv-app/ViPER4AndroidFX/lib/$ABI
 if $MAT; then
   ui_print "   Material V4A will be installed"
-  cp -f $INSTALLER/custom/mat/privapp-permissions-com.pittvandewitt.viperfx.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.pittvandewitt.viperfx.xml
-  sed -ri "s/name=(.*)/name=\1 Materialized/" $INSTALLER/module.prop
-  sed -i "s/author=.*/author=ViPER520, ZhuHang, Team_Dewitt, Ahrion, Zackptg5/" $INSTALLER/module.prop
+  cp -f $TMPDIR/custom/mat/privapp-permissions-com.pittvandewitt.viperfx.xml $TMPDIR/system/etc/permissions/privapp-permissions-com.pittvandewitt.viperfx.xml
+  sed -ri "s/name=(.*)/name=\1 Materialized/" $TMPDIR/module.prop
+  sed -i "s/author=.*/author=ViPER520, ZhuHang, Team_Dewitt, Ahrion, Zackptg5/" $TMPDIR/module.prop
   ACTIVITY="com.pittvandewitt.viperfx"
   FACTIVITY="com.pittvandewitt.viperfx/com.audlabs.viperfx.main.MainActivity"
 elif $NEW; then
   ui_print "   V4A $VER will be installed"
-  cp -f $INSTALLER/custom/$VER/privapp-permissions-com.audlabs.viperfx.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.audlabs.viperfx.xml
+  cp -f $TMPDIR/custom/$VER/privapp-permissions-com.audlabs.viperfx.xml $TMPDIR/system/etc/permissions/privapp-permissions-com.audlabs.viperfx.xml
   ACTIVITY="com.audlabs.viperfx"
   FACTIVITY="com.audlabs.viperfx/.main.StartActivity"
 elif $MID; then
   VER="2.4.0.1"
   ui_print "   V4A $VER will be installed"
-  cp -f $INSTALLER/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
+  cp -f $TMPDIR/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $TMPDIR/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
   ACTIVITY="com.vipercn.viper4android_v2"
   FACTIVITY="com.vipercn.viper4android_v2/.activity.ViPER4Android"
-  LIBPATCH="\/system"; LIBDIR=/system; DYNAMICOREO=false
+  LIBPATCH="\/system"; LIBDIR=/system; DYNAMICLIB=false
 else
   VER="2.3.4.0"
   ui_print "   V4A $VER will be installed"
-  cp -f $INSTALLER/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $INSTALLER/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
+  cp -f $TMPDIR/custom/$VER/privapp-permissions-com.vipercn.viper4android_v2.xml $TMPDIR/system/etc/permissions/privapp-permissions-com.vipercn.viper4android_v2.xml
   ACTIVITY="com.vipercn.viper4android_v2"
   FACTIVITY="com.vipercn.viper4android_v2/.activity.ViPER4Android"
-  LIBPATCH="\/system"; LIBDIR=/system; DYNAMICOREO=false
+  LIBPATCH="\/system"; LIBDIR=/system; DYNAMICLIB=false
 fi
 
-sed -i "s/<SOURCE>/$SOURCE/g" $INSTALLER/common/sepolicy.sh
-sed -i -e "s/<ACTIVITY>/$ACTIVITY/g" -e "s|<FACTIVITY>|$FACTIVITY|g" $INSTALLER/common/service.sh
-sed -i "s/<ACTIVITY>/$ACTIVITY/g" $INSTALLER/common/v4afx.sh
-sed -ri "s/version=(.*)/version=\1 ($VER)/" $INSTALLER/module.prop
-echo -e "UA=$UA\nACTIVITY=$ACTIVITY" >> $INSTALLER/module.prop
-cp -f $INSTALLER/custom/$VER/libv4a_fx_jb_$ABI.so $INSTALLER/system/lib/soundfx/libv4a_fx_ics.so
-cp -f $INSTALLER/custom/$VER/libV4AJniUtils_$ABI.so $INSTALLER/system/priv-app/ViPER4AndroidFX/lib/$ABI/libV4AJniUtils.so
+sed -i "s/<SOURCE>/$SOURCE/g" $TMPDIR/common/sepolicy.sh
+sed -i -e "s/<ACTIVITY>/$ACTIVITY/g" -e "s|<FACTIVITY>|$FACTIVITY|g" $TMPDIR/common/service.sh
+sed -i "s/<ACTIVITY>/$ACTIVITY/g" $TMPDIR/common/v4afx.sh
+sed -ri "s/version=(.*)/version=\1 ($VER)/" $TMPDIR/module.prop
+echo -e "UA=$UA\nACTIVITY=$ACTIVITY" >> $TMPDIR/module.prop
+cp -f $TMPDIR/custom/$VER/libv4a_fx_jb_$ABI.so $TMPDIR/system/lib/soundfx/libv4a_fx_ics.so
+cp -f $TMPDIR/custom/$VER/libV4AJniUtils_$ABI.so $TMPDIR/system/priv-app/ViPER4AndroidFX/lib/$ABI/libV4AJniUtils.so
 $MAT && VER="mat"
 if $UA; then
   if $MAGISK; then
     ui_print "   V4A will be installed as user app"
-    install_script -l $INSTALLER/common/v4afx.sh
-    cp -f $INSTALLER/custom/$VER/ViPER4AndroidFX.apk $UNITY/ViPER4AndroidFX.apk
+    install_script -l $TMPDIR/common/v4afx.sh
+    cp -f $TMPDIR/custom/$VER/ViPER4AndroidFX.apk $UNITY/ViPER4AndroidFX.apk
   else
-    cp -f $INSTALLER/custom/$VER/ViPER4AndroidFX.apk $SDCARD/ViPER4AndroidFX.apk
+    cp -f $TMPDIR/custom/$VER/ViPER4AndroidFX.apk $SDCARD/ViPER4AndroidFX.apk
     ui_print " "
     ui_print "   ViPER4AndroidFX.apk copied to root of internal storage (sdcard)"
     ui_print "   Install manually after booting"
     sleep 2
   fi
-  rm -rf $INSTALLER/system/priv-app
+  rm -rf $TMPDIR/system/priv-app
 else
   ui_print "   V4A will be installed as system app"
-  cp -f $INSTALLER/custom/$VER/ViPER4AndroidFX.apk $INSTALLER/system/priv-app/ViPER4AndroidFX/ViPER4AndroidFX.apk
+  cp -f $TMPDIR/custom/$VER/ViPER4AndroidFX.apk $TMPDIR/system/priv-app/ViPER4AndroidFX/ViPER4AndroidFX.apk
 fi
 
 # Lib fix for pixel 2's, 3's, and essential phone
-if $LIBWA || device_check "walleye" || device_check "taimen" || device_check "crosshatch" || device_check "blueline" || device_check "mata" || device_check "jasmine" || device_check "star2lte" || device_check "z2_row"; then
+if $LIBWA; then
   ui_print "   Applying lib workaround..."
   if [ -f $ORIGDIR/system/lib/libstdc++.so ] && [ ! -f $ORIGVEN/lib/libstdc++.so ]; then
     cp_ch $ORIGDIR/system/lib/libstdc++.so $UNITY$VEN/lib/libstdc++.so
