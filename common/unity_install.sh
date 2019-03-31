@@ -183,6 +183,9 @@ else
   LIBPATCH="\/system"; LIBDIR=/system; DYNAMICLIB=false
 fi
 
+# Sanity-check to avoid rm -rf /data/data disaster in v4afx.sh.
+[ -n "ACTIVITY" ] || exit 1
+
 sed -i "s/<SOURCE>/$SOURCE/g" $TMPDIR/common/sepolicy.sh
 sed -i -e "s/<ACTIVITY>/$ACTIVITY/g" -e "s|<FACTIVITY>|$FACTIVITY|g" $TMPDIR/common/service.sh
 sed -i "s/<ACTIVITY>/$ACTIVITY/g" $TMPDIR/common/v4afx.sh
