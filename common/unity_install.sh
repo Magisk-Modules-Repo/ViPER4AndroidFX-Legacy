@@ -184,7 +184,7 @@ else
 fi
 
 # Sanity-check to avoid rm -rf /data/data disaster in v4afx.sh.
-[ -n "ACTIVITY" ] || exit 1
+[ -n "ACTIVITY" ] || abort " "
 
 sed -i "s/<SOURCE>/$SOURCE/g" $TMPDIR/common/sepolicy.sh
 sed -i -e "s/<ACTIVITY>/$ACTIVITY/g" -e "s|<FACTIVITY>|$FACTIVITY|g" $TMPDIR/common/service.sh
